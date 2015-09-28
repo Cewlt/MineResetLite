@@ -53,8 +53,8 @@ public class MineResetLite extends JavaPlugin {
 	
 	public static void broadcast(String message, Mine mine) {
 		if (Config.getBroadcastNearbyOnly()) {
-			for (Player p : mine.getWorld().getPlayers()) {
-				if (mine.isInside(p)) {
+			for (Player p : Mine.getWorld().getPlayers()) {
+				if (Mine.isInside(p)) {
 					p.sendMessage(message);
 				}
 			}
@@ -62,7 +62,7 @@ public class MineResetLite extends JavaPlugin {
 				Bukkit.getLogger().info(message);
 			}
 		} else if (Config.getBroadcastInWorldOnly()) {
-			for (Player p : mine.getWorld().getPlayers()) {
+			for (Player p : Mine.getWorld().getPlayers()) {
 				p.sendMessage(message);
 			}
 			if (MineResetLite.instance.getConfig().getBoolean("consoleLogMineReset", false)) {
@@ -88,6 +88,7 @@ public class MineResetLite extends JavaPlugin {
 		commandManager.register(MineCommands.class, new MineCommands(this));
 		commandManager.register(CommandManager.class, commandManager);
 		commandManager.register(PluginCommands.class, new PluginCommands(this));
+		Bukkit.getServer().getPluginManager().registerEvents(new TP(), this);
 		Locale locale = new Locale(Config.getLocale());
 		Phrases.getInstance().initialize(locale);
 		File overrides = new File(getDataFolder(), "phrases.properties");
@@ -132,18 +133,25 @@ public class MineResetLite extends JavaPlugin {
 			}
 		}, 60 * 20L, 60 * 20L);
 		
-		try {
-			Metrics metrics = new Metrics(this);
-			metrics.start();
-		} catch (IOException e) {
-		}
-		
 		if (getServer().getPluginManager().getPlugin("PrisonMines") != null) {
 			convertPrisonMines();
 			getServer().getPluginManager().disablePlugin(getServer().getPluginManager().getPlugin("PrisonMines"));
 		}
 		
 		logger.info("MineResetLite version " + getDescription().getVersion() + " enabled!");
+	}
+	
+	public class TP implements Listener {
+		@SuppressWarnings("static-access")
+		@EventHandler
+		public void onJoin(PlayerJoinEvent e) {
+			Player p = e.getPlayer();
+			for (Mine mine : mines) {
+				if (mine.isInside(p)) {
+					mine.teleport(p);
+				}
+			}
+		}
 	}
 	
 	public void onDisable() {
@@ -255,7 +263,7 @@ public class MineResetLite extends JavaPlugin {
 	
 	public Mine getMine(Player player) {
 		for (Mine mine : mines) {
-			if (mine.isInside(player)) {
+			if (Mine.isInside(player)) {
 				return mine;
 			}
 		}
@@ -317,6 +325,7 @@ public class MineResetLite extends JavaPlugin {
 		}
 	}
 	
+	@SuppressWarnings("unused")
 	private class UpdateWarner implements Listener {
 		@EventHandler(priority = EventPriority.MONITOR)
 		public void onJoin(PlayerJoinEvent event) {
@@ -353,6 +362,7 @@ public class MineResetLite extends JavaPlugin {
 			mine.setResetDelay(0);
 			
 			for (String blockComposition : config.getStringList("Blocks")) {
+				@SuppressWarnings("deprecation")
 				int id = Material.getMaterial(blockComposition.split("@")[0]).getId();
 				int percentage = Integer.valueOf(blockComposition.split("@")[1].split(":")[1]);
 				mine.getComposition().put(new SerializableBlock(id), Double.valueOf("0." + percentage));

@@ -21,39 +21,43 @@ import org.bukkit.entity.Player;
  * @author jjkoletar
  */
 public class Mine implements ConfigurationSerializable {
-	private int								minX;
-	private int								minY;
-	private int								minZ;
-	private int								maxX;
-	private int								maxY;
-	private int								maxZ;
-	private World							world;
-	private Map<SerializableBlock, Double>	composition;
-	private int								resetDelay;
-	private List<Integer>					resetWarnings;
-	private String							name;
-	private SerializableBlock				surface;
+	private static int						minX;
+	private static int						minY;
+	private static int						minZ;
+	private static int						maxX;
+	private static int						maxY;
+	private static int						maxZ;
+	private static World					        world;
+	private Map<SerializableBlock, Double>	                        composition;
+	private int							resetDelay;
+	private List<Integer>				         	resetWarnings;
+	private static String					        name;
+	private SerializableBlock				        surface;
 	private boolean							fillMode;
-	private int								resetClock;
+	private int							resetClock;
 	private boolean							isSilent;
 	private boolean							ignoreLadders = false;
-	private int								tpX = 0;
-	private int								tpY = -1;
-	private int								tpZ = 0;
-
+	private static boolean                                          hasTpPos = false;
+	private static int						tpX = 0;
+	private static int						tpY = -1;
+	private static int						tpZ = 0;
+	private static float                                            tpYaw = 0.0f;
+	private static float                                            tpPitch = 0.0f;
+	
 	public Mine(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, String name, World world) {
-		this.minX = minX;
-		this.minY = minY;
-		this.minZ = minZ;
-		this.maxX = maxX;
-		this.maxY = maxY;
-		this.maxZ = maxZ;
-		this.name = name;
-		this.world = world;
+		Mine.minX = minX;
+		Mine.minY = minY;
+		Mine.minZ = minZ;
+		Mine.maxX = maxX;
+		Mine.maxY = maxY;
+		Mine.maxZ = maxZ;
+		Mine.name = name;
+		Mine.world = world;
 		composition = new HashMap<SerializableBlock, Double>();
 		resetWarnings = new LinkedList<Integer>();
 	}
-
+	
+	@SuppressWarnings("unchecked")
 	public Mine(Map<String, Object> me) {
 		try {
 			minX = (Integer) me.get("minX");
@@ -99,29 +103,31 @@ public class Mine implements ConfigurationSerializable {
 		}
 		if (me.containsKey("surface")) {
 			if (!me.get("surface").equals("")) {
-				surface = new SerializableBlock((String) me.get("surface"));
+				surface = new SerializableBlock((String)me.get("surface"));
 			}
 		}
 		if (me.containsKey("fillMode")) {
-			fillMode = (Boolean) me.get("fillMode");
+			fillMode = (Boolean)me.get("fillMode");
 		}
 		if (me.containsKey("resetClock")) {
-			resetClock = (Integer) me.get("resetClock");
+			resetClock = (Integer)me.get("resetClock");
 		}
 		// Compat for the clock
 		if (resetDelay > 0 && resetClock == 0) {
 			resetClock = resetDelay;
 		}
 		if (me.containsKey("isSilent")) {
-			isSilent = (Boolean) me.get("isSilent");
+			isSilent = (Boolean)me.get("isSilent");
 		}
 		if (me.containsKey("ignoreLadders")) {
-			ignoreLadders = (Boolean) me.get("ignoreLadders");
+			ignoreLadders = (Boolean)me.get("ignoreLadders");
 		}
-		if (me.containsKey("tpY")){ //Should contain all three if it contains this one
-			tpX = (Integer) me.get("tpX");
-			tpY = (Integer) me.get("tpY");
-			tpZ = (Integer) me.get("tpZ");
+		if (me.containsKey("tpY")){ //Should contain all five if it contains this one
+			tpX = (Integer)me.get("tpX");
+			tpY = (Integer)me.get("tpY");
+			tpZ = (Integer)me.get("tpZ");
+			tpYaw = Float.parseFloat((String)me.get("tpYaw"));
+			tpPitch = Float.parseFloat((String)me.get("tpPitch"));
 		}
 	}
 
@@ -159,6 +165,8 @@ public class Mine implements ConfigurationSerializable {
 		me.put("tpX", tpX);
 		me.put("tpY", tpY);
 		me.put("tpZ", tpZ);
+		me.put("tpYaw", Float.toString(tpYaw));
+		me.put("tpPitch", Float.toString(tpPitch));
 		return me;
 	}
 
@@ -205,7 +213,7 @@ public class Mine implements ConfigurationSerializable {
 		this.surface = surface;
 	}
 
-	public World getWorld() {
+	public static World getWorld() {
 		return world;
 	}
 
@@ -230,7 +238,7 @@ public class Mine implements ConfigurationSerializable {
 	}
 
 	public void setMinX(int minX) {
-		this.minX = minX;
+		Mine.minX = minX;
 	}
 
 	public int getMinY() {
@@ -238,7 +246,7 @@ public class Mine implements ConfigurationSerializable {
 	}
 
 	public void setMinY(int minY) {
-		this.minY = minY;
+		Mine.minY = minY;
 	}
 
 	public int getMinZ() {
@@ -246,7 +254,7 @@ public class Mine implements ConfigurationSerializable {
 	}
 
 	public void setMinZ(int minZ) {
-		this.minZ = minZ;
+		Mine.minZ = minZ;
 	}
 
 	public int getMaxX() {
@@ -254,7 +262,7 @@ public class Mine implements ConfigurationSerializable {
 	}
 
 	public void setMaxX(int maxX) {
-		this.maxX = maxX;
+		Mine.maxX = maxX;
 	}
 
 	public int getMaxY() {
@@ -262,7 +270,7 @@ public class Mine implements ConfigurationSerializable {
 	}
 
 	public void setMaxY(int maxY) {
-		this.maxY = maxY;
+		Mine.maxY = maxY;
 	}
 
 	public int getMaxZ() {
@@ -270,7 +278,7 @@ public class Mine implements ConfigurationSerializable {
 	}
 
 	public void setMaxZ(int maxZ) {
-		this.maxZ = maxZ;
+		Mine.maxZ = maxZ;
 	}
 
 	public boolean isSilent() {
@@ -293,43 +301,46 @@ public class Mine implements ConfigurationSerializable {
 		tpX = l.getBlockX();
 		tpY = l.getBlockY();
 		tpZ = l.getBlockZ();
+	    tpYaw = l.getYaw();
+		tpPitch = l.getPitch();
+		hasTpPos = true;
+	}
+	
+	public void removeTpPos() {
+		tpX = 0;
+		tpY = 0;
+		tpZ = 0;
+	    tpYaw = 0;
+		tpPitch = 0;
+		hasTpPos = false;
+	}
+	
+	public static Location getTpPos() {
+		return new Location(getWorld(), tpX, tpY, tpZ, tpYaw, tpPitch);
+	}
+	
+	public static boolean hasTpPos() {
+		return hasTpPos;
 	}
 
-	public Location getTpPos() {
-		return new Location(getWorld(), tpX, tpY, tpZ);
-	}
-
-	public boolean isInside(Player p) {
+	public static boolean isInside(Player p) {
 		return isInside(p.getLocation());
 	}
 
-	public boolean isInside(Location l) {
+	public static boolean isInside(Location l) {
 		return (l.getWorld().getName().equals(getWorld().getName()))
 				&& (l.getBlockX() >= minX && l.getBlockX() <= maxX) && (l.getBlockY() >= minY && l.getBlockY() <= maxY)
 				&& (l.getBlockZ() >= minZ && l.getBlockZ() <= maxZ);
 	}
 
+	@SuppressWarnings({ "deprecation" })
 	public void reset() {
 		// Get probability map
 		List<CompositionEntry> probabilityMap = mapComposition(composition);
 		// Pull players out
 		for (Player p : Bukkit.getServer().getOnlinePlayers()) {
-			Location l = p.getLocation();
 			if (isInside(p)) {
-				if (tpY >= 0) { //If tpY is set to something (Not -1)
-					p.teleport(getTpPos());
-				} else { //No tp position set (Teleport up)
-					// make sure we find a safe location above the mine
-					Location tp = new Location(world, l.getX(), maxY + 1, l.getZ());
-					Block block = tp.getBlock();
-
-					// check to make sure we don't suffocate player
-					if (block.getType() != Material.AIR || block.getRelative(BlockFace.UP).getType() != Material.AIR) {
-						tp = new Location(world, l.getX(), l.getWorld().getHighestBlockYAt(l.getBlockX(), l.getBlockZ()),
-								l.getZ());
-					}
-					p.teleport(tp);
-				}
+				p.teleport(getTpPos());
 			}
 		}
 		// Actually reset
@@ -421,29 +432,30 @@ public class Mine implements ConfigurationSerializable {
 		return probabilityMap;
 	}
 
-	public void teleport(Player player) {
-		Location max = new Location(world, Math.max(this.maxX, this.minX), this.maxY, Math.max(this.maxZ, this.minZ));
-		Location min = new Location(world, Math.min(this.maxX, this.minX), this.minY, Math.min(this.maxZ, this.minZ));
-
-		Location location = max.add(min).multiply(0.5);
-		Block block = location.getBlock();
-
-		if (block.getType() != Material.AIR || block.getRelative(BlockFace.UP).getType() != Material.AIR) {
-			location = new Location(world, location.getX(), location.getWorld().getHighestBlockYAt(
-					location.getBlockX(), location.getBlockZ()), location.getZ());
+	public static void teleport(Player player) {
+		if(hasTpPos()) {
+			player.teleport(getTpPos());
+		} else {
+			Location max = new Location(world, Math.max(maxX, minX), maxY, Math.max(maxZ, minZ));
+			Location min = new Location(world, Math.min(maxX, minX), minY, Math.min(maxZ, minZ));
+			Location location = max.add(min).multiply(0.5);
+			Block block = location.getBlock();
+			if (block.getType() != Material.AIR || block.getRelative(BlockFace.UP).getType() != Material.AIR) {
+				location = new Location(world, location.getX(), location.getWorld().getHighestBlockYAt(
+						location.getBlockX(), location.getBlockZ()), location.getZ());
+			}
+			player.teleport(location);
 		}
-
-		player.teleport(location);
 	}
 
 	public void redefine(int minX, int minY, int minZ, int maxX, int maxY, int maxZ, World world) {
-		this.minX = minX;
-		this.minY = minY;
-		this.minZ = minZ;
-		this.maxX = maxX;
-		this.maxY = maxY;
-		this.maxZ = maxZ;
-		this.world = world;
+		Mine.minX = minX;
+		Mine.minY = minY;
+		Mine.minZ = minZ;
+		Mine.maxX = maxX;
+		Mine.maxY = maxY;
+		Mine.maxZ = maxZ;
+		Mine.world = world;
 	}
 
 }

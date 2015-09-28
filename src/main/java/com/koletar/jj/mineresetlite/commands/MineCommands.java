@@ -61,7 +61,7 @@ public class MineCommands {
 			player.sendMessage(phrase("firstPointSet"));
 			return;
 		}
-		// Args weren't empty or -feet, bad args
+		// Args weren't empty or -feet, bad args.
 		throw new InvalidCommandArgumentsException();
 	}
 	
